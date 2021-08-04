@@ -4,7 +4,7 @@ from xgboost import XGBClassifier,XGBRegressor
 from collections import OrderedDict
 from XBNet.Seq import Seq
 
-# dev push
+
 
 class XBNETClassifier(torch.nn.Module):
     '''
@@ -70,7 +70,7 @@ class XBNETClassifier(torch.nn.Module):
 
     def base_tree(self):
         '''
-        Instantiates and trains a XGBRegressor on the first layer of the neural network to set its feature importances
+        Instantiates and trains a XGBClassifier on the first layer of the neural network to set its feature importances
          as the weights of the layer
         '''
         self.temp1 = XGBClassifier().fit(self.X, self.y).feature_importances_

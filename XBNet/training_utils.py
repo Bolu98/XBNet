@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import torch
 
 
-def training(model,trainDataload,testDataload,criterion,optimizer,epochs = 100):
+def training(model,trainDataload,valDataLoad,criterion,optimizer,epochs = 100):
     '''
     Training function for training the model with the given data
     :param model(XBNET Classifier/Regressor): model to be trained
     :param trainDataload(object of DataLoader): DataLoader with training data
-    :param testDataload(object of DataLoader): DataLoader with testing data
+    :param valDataLoad(object of DataLoader): DataLoader with testing data
     :param criterion(object of loss function): Loss function to be used for training
     :param optimizer(object of Optimizer): Optimizer used for training
     :param epochs(int,optional): Number of epochs for training the model. Default value: 100
@@ -29,20 +29,29 @@ def training(model,trainDataload,testDataload,criterion,optimizer,epochs = 100):
         loss = None
         for inp, out in trainDataload:
             try:
+                # Make targets one dimensional tensor
                 if out.shape[0] >= 1:
                     out = torch.squeeze(out, 1)
             except:
                 pass
+            # Gets target values of inputs
             model.get(out.float())
+            # Obtains the tensors at final NN hidden layer
             y_pred = model(inp.float())
+            # computes loss btw prediction and target
             if model.labels == 1:
                 loss = criterion(y_pred, out.view(-1, 1).float())
             else:
                 loss = criterion(y_pred, out.long())
+            # Increment the loss by scalar new loss
             running_loss += loss.item()
+            # Compute gradient of loss
             loss.backward()
+            # Update the gradient using optimizer rule
             optimizer.step()
+            # Clear the gradient
             optimizer.zero_grad()
+            # NOT SURE
             for i, p in enumerate(model.parameters()):
                 if i < model.num_layers_boosted:
                     l0 = torch.unsqueeze(model.sequential.boosted_layers[i], 1)
@@ -55,12 +64,14 @@ def training(model,trainDataload,testDataload,criterion,optimizer,epochs = 100):
                         pass
                 else:
                     pass
+            # Obtains the tensors at final NN hidden layer after UNSURE
             outputs = model(inp.float(),train = False)
             predicted = outputs
             total += out.float().size(0)
             if model.name == "Regression":
                 pass
             else:
+                # Decide based on threshold whether classification is correct or wrong
                 if model.labels == 1:
                     for i in range(len(predicted)):
                         if predicted[i] < torch.Tensor([0.5]):
@@ -71,6 +82,7 @@ def training(model,trainDataload,testDataload,criterion,optimizer,epochs = 100):
                         if predicted[i].type(torch.LongTensor) == out[i]:
                             correct += 1
                 else:
+                    # UNSURE
                     _, predicted = torch.max(outputs.data, 1)
                     correct += (predicted == out.long()).sum().item()
 
@@ -85,7 +97,7 @@ def training(model,trainDataload,testDataload,criterion,optimizer,epochs = 100):
         else:
             accuracy.append(100*r2_score(out.detach().numpy(),predicted.detach().numpy()))
             print("Training Loss after epoch {} is {} and Accuracy is {}".format(epochs+1,running_loss/len(trainDataload),accuracy[-1]))
-        v_l,v_a = validate(model,testDataload,criterion,epochs)
+        v_l,v_a = validate(model,valDataLoad,criterion,epochs)
         val_acc.extend(v_a)
         val_loss.extend(v_l)
     if model.name == "Classification":
@@ -95,40 +107,40 @@ def training(model,trainDataload,testDataload,criterion,optimizer,epochs = 100):
         print("Mean Absolute error Score: ", mean_absolute_error(np.array(act),np.array(predictions)))
         print("Mean Squared error Score: ", mean_squared_error(np.array(act),np.array(predictions)))
         print("Root Mean Squared error Score: ", np.sqrt(mean_squared_error(np.array(act),np.array(predictions))))
-    validate(model,testDataload,criterion,epochs,True)
+    validate(model,valDataLoad,criterion,epochs,True)
 
     model.feature_importances_ = torch.nn.Softmax(dim=0)(model.layers["0"].weight[1]).detach().numpy()
 
-    figure, axis = plt.subplots(2)
-    figure.suptitle('Performance of XBNET')
+    # figure, axis = plt.subplots(2)
+    # figure.suptitle('Performance of XBNET')
 
-    axis[0].plot(accuracy, label="Training Accuracy")
-    axis[0].plot(val_acc, label="Testing Accuracy")
-    axis[0].set_xlabel('Epochs')
-    axis[0].set_ylabel('Accuracy')
-    axis[0].set_title("XBNet Accuracy ")
-    axis[0].legend()
+    # axis[0].plot(accuracy, label="Training Accuracy")
+    # axis[0].plot(val_acc, label="Testing Accuracy")
+    # axis[0].set_xlabel('Epochs')
+    # axis[0].set_ylabel('Accuracy')
+    # axis[0].set_title("XBNet Accuracy ")
+    # axis[0].legend()
 
 
-    axis[1].plot(lossing, label="Training Loss")
-    axis[1].plot(val_loss, label="Testing Loss")
-    axis[1].set_xlabel('Epochs')
-    axis[1].set_ylabel('Loss value')
-    axis[1].set_title("XBNet Loss")
-    axis[1].legend()
+    # axis[1].plot(lossing, label="Training Loss")
+    # axis[1].plot(val_loss, label="Testing Loss")
+    # axis[1].set_xlabel('Epochs')
+    # axis[1].set_ylabel('Loss value')
+    # axis[1].set_title("XBNet Loss")
+    # axis[1].legend()
 
-    plt.show()
+    # plt.show()
 
     return accuracy,lossing,val_acc,val_loss
 
 
 
 @torch.no_grad()
-def validate(model,testDataload,criterion,epochs,last=False):
+def validate(model,valDataLoad,criterion,epochs,last=False):
     '''
     Function for validating the training on testing/validation data.
     :param model(XBNET Classifier/Regressor): model to be trained
-    :param testDataload(object of DataLoader): DataLoader with testing data
+    :param valDataLoad(object of DataLoader): DataLoader with testing data
     :param criterion(object of loss function): Loss function to be used for training
     :param epochs(int,optional): Number of epochs for training the model. Default value: 100
     :param last(Boolean, optional): Checks if the current epoch is the last epoch. Default: False
@@ -142,7 +154,8 @@ def validate(model,testDataload,criterion,epochs,last=False):
     act = []
     correct = 0
     total = 0
-    for inp, out in testDataload:
+    # Same as before but on valDataLoad
+    for inp, out in valDataLoad:
         model.get(out.float())
         y_pred = model(inp.float(), train=False)
         if model.labels == 1:
@@ -169,7 +182,7 @@ def validate(model,testDataload,criterion,epochs,last=False):
 
         predictions.extend(predicted.detach().numpy())
         act.extend(out.detach().numpy())
-    lossing.append(valid_loss / len(testDataload))
+    lossing.append(valid_loss / len(valDataLoad))
     if model.name == "Classification":
         accuracy.append(100 * correct / total)
     else:
@@ -183,10 +196,10 @@ def validate(model,testDataload,criterion,epochs,last=False):
             print("Mean Squared error Score: ", mean_squared_error(np.array(act), np.array(predictions)))
             print("Root Mean Squared error Score: ", np.sqrt(mean_squared_error(np.array(act), np.array(predictions))))
     if model.name == "Classification":
-        print("Validation Loss after epoch {} is {} and Accuracy is {}".format(epochs+1, valid_loss / len(testDataload),
+        print("Validation Loss after epoch {} is {} and Accuracy is {}".format(epochs+1, valid_loss / len(valDataLoad),
                                                                                100 * correct / total))
     else:
-        print("Validation Loss after epoch {} is {} and Accuracy is {}".format(epochs+1, valid_loss / len(testDataload),
+        print("Validation Loss after epoch {} is {} and Accuracy is {}".format(epochs+1, valid_loss / len(valDataLoad),
                                                                                100*r2_score(np.array(act), np.array(predictions))))
     return lossing, accuracy
 
