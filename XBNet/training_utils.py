@@ -29,29 +29,20 @@ def training(model,trainDataload,valDataLoad,criterion,optimizer,epochs = 100):
         loss = None
         for inp, out in trainDataload:
             try:
-                # Make targets one dimensional tensor
                 if out.shape[0] >= 1:
                     out = torch.squeeze(out, 1)
             except:
                 pass
-            # Gets target values of inputs
             model.get(out.float())
-            # Obtains the tensors at final NN hidden layer
             y_pred = model(inp.float())
-            # computes loss btw prediction and target
             if model.labels == 1:
                 loss = criterion(y_pred, out.view(-1, 1).float())
             else:
                 loss = criterion(y_pred, out.long())
-            # Increment the loss by scalar new loss
             running_loss += loss.item()
-            # Compute gradient of loss
             loss.backward()
-            # Update the gradient using optimizer rule
             optimizer.step()
-            # Clear the gradient
             optimizer.zero_grad()
-            # NOT SURE
             for i, p in enumerate(model.parameters()):
                 if i < model.num_layers_boosted:
                     l0 = torch.unsqueeze(model.sequential.boosted_layers[i], 1)
@@ -64,14 +55,12 @@ def training(model,trainDataload,valDataLoad,criterion,optimizer,epochs = 100):
                         pass
                 else:
                     pass
-            # Obtains the tensors at final NN hidden layer after UNSURE
             outputs = model(inp.float(),train = False)
             predicted = outputs
             total += out.float().size(0)
             if model.name == "Regression":
                 pass
             else:
-                # Decide based on threshold whether classification is correct or wrong
                 if model.labels == 1:
                     for i in range(len(predicted)):
                         if predicted[i] < torch.Tensor([0.5]):
@@ -82,7 +71,6 @@ def training(model,trainDataload,valDataLoad,criterion,optimizer,epochs = 100):
                         if predicted[i].type(torch.LongTensor) == out[i]:
                             correct += 1
                 else:
-                    # UNSURE
                     _, predicted = torch.max(outputs.data, 1)
                     correct += (predicted == out.long()).sum().item()
 
@@ -111,26 +99,6 @@ def training(model,trainDataload,valDataLoad,criterion,optimizer,epochs = 100):
 
     model.feature_importances_ = torch.nn.Softmax(dim=0)(model.layers["0"].weight[1]).detach().numpy()
 
-    # figure, axis = plt.subplots(2)
-    # figure.suptitle('Performance of XBNET')
-
-    # axis[0].plot(accuracy, label="Training Accuracy")
-    # axis[0].plot(val_acc, label="Testing Accuracy")
-    # axis[0].set_xlabel('Epochs')
-    # axis[0].set_ylabel('Accuracy')
-    # axis[0].set_title("XBNet Accuracy ")
-    # axis[0].legend()
-
-
-    # axis[1].plot(lossing, label="Training Loss")
-    # axis[1].plot(val_loss, label="Testing Loss")
-    # axis[1].set_xlabel('Epochs')
-    # axis[1].set_ylabel('Loss value')
-    # axis[1].set_title("XBNet Loss")
-    # axis[1].legend()
-
-    # plt.show()
-
     return accuracy,lossing,val_acc,val_loss
 
 
@@ -154,7 +122,6 @@ def validate(model,valDataLoad,criterion,epochs,last=False):
     act = []
     correct = 0
     total = 0
-    # Same as before but on valDataLoad
     for inp, out in valDataLoad:
         model.get(out.float())
         y_pred = model(inp.float(), train=False)

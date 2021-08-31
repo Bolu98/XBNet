@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset,DataLoader
 from XBNet.training_utils import training
 from sklearn.model_selection import KFold
+import matplotlib.pyplot as plt
 
 class Data(Dataset):
     '''
@@ -18,27 +19,6 @@ class Data(Dataset):
 
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
-
-# def run_XBNET(X_train,X_test,y_train,y_test,model,criterion,optimizer,batch_size = 16,epochs=100):
-#     '''
-#     run_XBNET actually executes the entire training and validation methods for the models. Prints the metrics for the task
-#     and plots the graphs of accuracy vs epochs and loss vs epochs.
-#          :param X_train(numpy array): Features on which model has to be trained
-#          :param y_train(numpy array): Labels of X_train i.e target variable
-#          :param X_test(numpy array): Features on which model has to be validated
-#          :param y_test(numpy array): Labels of X_test i.e target variable
-#          :param model(XBNET Classifier/Regressor): model to be trained
-#          :param criterion(object of loss function): Loss function to be used for training
-#          :param optimizer(object of Optimizer): Optimizer used for training
-#          :param batch_size(int,optional): Batch size used for training and validation. Default value: 16
-#          :param epochs(int,optional): Number of epochs for training the model. Default value: 100
-#       :return:
-#          model object, list of training accuracy, training loss, testing accuracy, testing loss for all the epochs
-#     '''
-#     trainDataload = DataLoader(Data(X_train, y_train), batch_size=batch_size)
-#     testDataload = DataLoader(Data(X_test, y_test), batch_size=batch_size)
-#     acc, lo, val_ac, val_lo = training(model, trainDataload, testDataload, criterion, optimizer, epochs)
-#     return model,acc, lo, val_ac, val_lo
 
 def run_XBNET(X_train,y_train,model,criterion,optimizer,batch_size=16,epochs=100):
     N_splits = 5
@@ -62,4 +42,9 @@ def run_XBNET(X_train,y_train,model,criterion,optimizer,batch_size=16,epochs=100
     return model, final_acc, final_cost, final_val_acc, final_val_cost
 
 
-
+def plot_feature(model):
+    plt.figure()
+    plt.bar(range(len(model.feature_importances_)), model.feature_importances_)
+    plt.xlabel('Feature Index')
+    plt.ylabel('Feature Importance Magnitude')
+    plt.savefig('Iris-feature.eps', format='eps')
