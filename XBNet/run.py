@@ -47,4 +47,3 @@ def plot_feature(model):
     plt.bar(range(len(model.feature_importances_)), model.feature_importances_)
     plt.xlabel('Feature Index')
     plt.ylabel('Feature Importance Magnitude')
-    plt.savefig('Iris-feature.eps', format='eps')
